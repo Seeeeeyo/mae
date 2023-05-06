@@ -1,5 +1,173 @@
 ## Masked Autoencoders: A PyTorch Implementation
 
+## Steps
+
+
+
+Use python 3.8 (should work).
+I tried only with python 3.10 but had to to the following changes:
+
+
+——------------ 
+In “/usr/local/lib/python3.10/dist-packages/timm/models/layers/helpers.py”, Add 
+```
+Import torch 
+TORCH_MAJOR = int(torch.__version__.split('.')[0])
+TORCH_MINOR = int(torch.__version__.split('.')[1])
+
+if TORCH_MAJOR == 1 and TORCH_MINOR < 8:
+    from torch._six import container_abcs
+else:
+    import collections.abc as container_abcs
+```
+——------------ 
+
+In “/content/mae/util/misc.py”, change 
+```from torch._six import inf```
+By 
+```from torch import inf```
+——------------ 
+
+-- Download the data from the drive 'data_60k' (full medmnist dataset) and 'data_sampled.zip' (fractions of medmnist dataset).
+-- Download a medical classification dataset. I let you choose one, as you know these better than I do. Let's try to find one which is kind of similar to MedMnist to hopefully reach some performances. The data structure should be as follow: 
+	- eval_data
+		- train 
+			-class1
+				-img1
+				-img2
+				-...
+			-class2
+			-...
+
+Then, 
+
+
+1) 
+```git clone https://github.com/Seeeeeyo/mae.git```
+----
+
+2) ```cd mae```
+
+----
+
+3) ```wget -nc https://dl.fbaipublicfiles.com/mae/finetune/mae_pretrain_vit_base.pth```
+
+----
+
+4) 
+```
+!pip install submitit
+!pip install timm==0.3.2
+```
+----
+
+5) Evaluate the mae_vit_base on eval_data
+```python main_finetune.py --eval --resume mae_finetuned_vit_base.pth --model vit_base_patch16 --batch_size 32 --data_path 'eval_data'```
+
+----
+6) FINETUNE
+
+```
+python main_finetune.py \
+    --accum_iter 1 \
+    --batch_size 32 \
+    --model vit_base_patch16 \
+    --finetune 'mae_pretrain_vit_base.pth' \
+    --epochs 50 \
+    --blr 5e-4 --layer_decay 0.65 \
+    --weight_decay 0.05 --drop_path 0.1 --mixup 0.8 --cutmix 1.0 --reprob 0.25 \
+    --dist_eval --data_path 'AGI/data_60k'    
+```
+
+
+ OR  (couldn't try it without cluster and multiple GPU):
+
+
+```
+python submitit_finetune.py \
+	--job_dir ${JOB_DIR} \
+    --nodes 4 \ TO CHANGE 
+    --batch_size 32 \ 
+    --model vit_base_patch14 \
+    --finetune 'mae_pretrain_vit_base.pth' \
+    --epochs 50 \
+    --blr 1e-3 --layer_decay 0.75 \
+    --weight_decay 0.05 --drop_path 0.3 --reprob 0.25 --mixup 0.8 --cutmix 1.0 \
+    --dist_eval --data_path 'AGI/data_60k'
+  ```
+
+
+
+OR (if running on 1 node with 8 GPUs. Couldn't try it without cluster and multiple GPU): 
+
+```
+MP_NUM_THREADS=1 python -m torch.distributed.launch --nproc_per_node=8 main_finetune.py \
+    --accum_iter 4 \
+    --batch_size 32 \
+    --model vit_base_patch16 \
+    --finetune 'mae_pretrain_vit_base.pth' \
+    --epochs 50 \
+    --blr 5e-4 --layer_decay 0.65 \
+    --weight_decay 0.05 --drop_path 0.1 --mixup 0.8 --cutmix 1.0 --reprob 0.25 \
+    --dist_eval --data_path 'AGI/data_60k'
+```
+
+----
+
+```
+model_path = 'mae/output_dir/checkpoint-49.pth'
+```
+
+7) Evaluate the finetune mae_vit_base on eval_data
+
+```
+python main_finetune.py --eval --resume {model_path} --model vit_base_patch16 --batch_size TODO --data_path 'eval_data'
+```
+
+----
+
+8) Repeat 6) and 7) for the different dataset sizes ('data_sampled_6k', 'data_sampled_36k', 'data_sampled_600').
+
+----
+IF NEEDED
+
+9)a) In case the results are shitty, we might need to pretrain the model on MedMnist and then finetune on the eval_data.
+
+```
+python submitit_pretrain.py \
+    --job_dir ${JOB_DIR} \
+    --nodes 8 \
+    --use_volta32 \
+    --batch_size 64 \
+    --model mae_vit_large_patch16 \
+    --norm_pix_loss \
+    --mask_ratio 0.75 \
+    --epochs 800 \
+    --warmup_epochs 40 \
+    --blr 1.5e-4 --weight_decay 0.05 \
+    --data_path 'AGI/data_60k'
+```
+
+
+9)b)
+
+```
+python main_finetune.py \
+    --accum_iter 1 \
+    --batch_size 32 \
+    --model vit_base_patch16 \
+    --finetune 'mae_pretrain_vit_base.pth' \
+    --epochs 50 \
+    --blr 5e-4 --layer_decay 0.65 \
+    --weight_decay 0.05 --drop_path 0.1 --mixup 0.8 --cutmix 1.0 --reprob 0.25 \
+    --dist_eval --data_path 'eval_data'
+```
+
+
+--------
+
+
+
 <p align="center">
   <img src="https://user-images.githubusercontent.com/11435359/146857310-f258c86c-fde6-48e8-9cee-badd2b21bd2c.png" width="480">
 </p>
