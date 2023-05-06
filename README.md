@@ -2,13 +2,13 @@
 
 ## Steps
 
-
+0) ```git clone https://github.com/Seeeeeyo/mae.git```
+----
+0.1)
 
 Use python 3.8 (should work).
 I tried only with python 3.10 but had to to the following changes:
 
-
-——------------ 
 In “/usr/local/lib/python3.10/dist-packages/timm/models/layers/helpers.py”, Add 
 ```
 Import torch 
@@ -20,16 +20,20 @@ if TORCH_MAJOR == 1 and TORCH_MINOR < 8:
 else:
     import collections.abc as container_abcs
 ```
-——------------ 
 
 In “/content/mae/util/misc.py”, change 
 ```from torch._six import inf```
 By 
 ```from torch import inf```
-——------------ 
 
--- Download the data from the drive 'data_60k' (full medmnist dataset) and 'data_sampled.zip' (fractions of medmnist dataset).
--- Download a medical classification dataset. I let you choose one, as you know these better than I do. Let's try to find one which is kind of similar to MedMnist to hopefully reach some performances. The data structure should be as follow: 
+
+----
+<pre>
+1) 
+
+*Download the data from the drive 'data_60k' (full medmnist dataset) and 'data_sampled.zip' (fractions of medmnist dataset).
+*Download a medical classification dataset. I let you choose one, as you know these better than I do. Let's try to find one which 
+ is kind of similar to MedMnist to hopefully reach some performances. The data structure should be as follow: 
 	- eval_data
 		- train 
 			-class1
@@ -38,12 +42,8 @@ By
 				-...
 			-class2
 			-...
+</pre>
 
-Then, 
-
-
-1) 
-```git clone https://github.com/Seeeeeyo/mae.git```
 ----
 
 2) ```cd mae```
