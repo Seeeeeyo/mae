@@ -11,7 +11,7 @@ I tried only with python 3.10 but had to to the following changes:
 
 In “/usr/local/lib/python3.10/dist-packages/timm/models/layers/helpers.py”, Add 
 ```
-Import torch 
+import torch 
 TORCH_MAJOR = int(torch.__version__.split('.')[0])
 TORCH_MINOR = int(torch.__version__.split('.')[1])
 
